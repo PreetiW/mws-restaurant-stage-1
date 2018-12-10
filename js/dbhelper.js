@@ -3,18 +3,68 @@
  */
 class DBHelper {
 
-
   /**
    * Fetch all restaurants.
    */
   static fetchRestaurants(callback) {
+
+    //check if data is there in database show that first and then hit network
+
+    this.retrieveFromDB().then((restaurants) => {
+      // If data is not present in the database then return
+      if(restaurants.length < 1) return;
+      callback(null, restaurants);
+    });
+
     const SERVER_URL = "http://localhost:1337/restaurants";
-    
+    // Using Fetch API to hit the server and get response
     fetch(SERVER_URL)
     .then(response => response.json())
-    .then(data => callback(null, data))
+    .then((data) => {
+      DBHelper.addToDatabase(data);
+      callback(null, data);
+    })
     .catch(error => callback(error, null));
-    
+  }
+
+  // Method to add restaurants details in the IndexedDB
+  static addToDatabase(restaurants){
+    this.openIndexedDB().then((db) => {
+      if(!db) return;
+
+      let tx = db.transaction('restaurants', 'readwrite');
+      let store = tx.objectStore('restaurants');
+      restaurants.forEach(restaurant => store.put(restaurant));
+
+    })
+  }
+
+  // Method to retrieve restaurants details from IndexedDB
+  static retrieveFromDB(){
+    return this.openIndexedDB().then((db) => {
+      if(!db) return;
+
+      let tx = db.transaction('restaurants');
+      let store = tx.objectStore('restaurants');
+      return store.getAll().then((restaurants) => {
+        return restaurants;
+      })
+    });
+  }
+
+  // Create and open the IndexedDB if browser supports
+  static openIndexedDB(params) {
+    if (!window.indexedDB) {
+      console.log("Your browser does not support IndexedDB");
+    }else{
+      console.log("Your browser supports IndexedDB")
+      let dbPromise = idb.open('restaurant-app', 1, function(upgradeDb) {
+        let keyValStore = upgradeDb.createObjectStore('restaurants', {
+          keyPath: 'id'
+        });
+      });
+      return dbPromise;
+    }    
   }
 
   /**

@@ -1,5 +1,5 @@
 
-let CACHE_NAME = 'restaurant-cache-v1';
+let CACHE_NAME = 'restaurant-cache-v2';
 let urlsToCache = [
     '/',
     './index.html',
